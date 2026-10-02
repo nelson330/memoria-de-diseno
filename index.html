@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Memoria de Diseño // Entrenador de Ojo Clínico</title>
+  
+  <!-- Google Fonts: Outfit (Cozy UI), Playfair Display (Serif), Cinzel (Display), JetBrains Mono (Monospace) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Outfit"', 'system-ui', 'sans-serif'],
+            display: ['"Cinzel"', 'serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            cozy: {
+              bg: '#faf7f2',
+              card: '#ffffff',
+              border: '#eedecf',
+              text: '#292524',
+              muted: '#78716c',
+              subtle: '#a8a29e',
+              cream: '#f5efe6',
+            },
+            mint: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            peach: {
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          },
+          boxShadow: {
+            'cozy-card': '0 12px 32px -4px rgba(130, 100, 80, 0.08), 0 4px 12px -2px rgba(130, 100, 80, 0.04)',
+            'cozy-modal': '0 25px 50px -12px rgba(100, 70, 50, 0.25)',
+            'tactile-btn': '0 4px 0 #d6c5b6, 0 6px 12px rgba(100, 80, 60, 0.08)',
+            'tactile-btn-active': '0 1px 0 #d6c5b6, 0 2px 4px rgba(100, 80, 60, 0.06)',
+            'tactile-green': '0 4px 0 #15803d, 0 6px 16px rgba(22, 163, 74, 0.25)',
+            'tactile-coral': '0 4px 0 #be123c, 0 6px 16px rgba(225, 29, 72, 0.25)',
+          },
+          animation: {
+            'bounce-gentle': 'bounceGentle 2.2s ease-in-out infinite',
+            'float-slow': 'floatSlow 4s ease-in-out infinite',
+            'fire-glow': 'firePulse 1.4s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            bounceGentle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            floatSlow: {
+              '0%, 100%': { transform: 'translateY(0) scale(1)' },
+              '50%': { transform: 'translateY(-4px) scale(1.02)' },
+            },
+            firePulse: {
+              '0%': { filter: 'drop-shadow(0 0 2px rgba(249, 115, 22, 0.4))' },
+              '100%': { filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8))' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    * {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #faf7f2;
+      color: #292524;
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* 3D Background Canvas (Soft Pastel Ambience) */
+    #three-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
+    /* Tactile Duolingo-style Cozy 3D Buttons */
+    .btn-tactile {
+      transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 0 #d6c5b6, 0 6px 12px rgba(90, 70, 50, 0.07);
+    }
+    .btn-tactile:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #d6c5b6, 0 2px 4px rgba(90, 70, 50, 0.05);
+    }
+
+    /* Primary Green Tactile */
+    .btn-green-tactile {
+      transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 0 #15803d, 0 8px 16px rgba(22, 163, 74, 0.2);
+    }
+    .btn-green-tactile:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #15803d, 0 2px 4px rgba(22, 163, 74, 0.15);
+    }
+
+    /* Primary Coral Tactile */
+    .btn-coral-tactile {
+      transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 0 #be123c, 0 8px 16px rgba(225, 29, 72, 0.2);
+    }
+    .btn-coral-tactile:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #be123c, 0 2px 4px rgba(225, 29, 72, 0.15);
+    }
+
+    /* Cozy Chip Tiles */
+    .chip-tactile {
+      transition: all 0.12s ease-out;
+      box-shadow: 0 3px 0 #ded1c4, 0 5px 10px rgba(90, 70, 50, 0.05);
+    }
+    .chip-tactile:active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 1px 0 #ded1c4;
+    }
+
+    /* Soft Screen Shake on Error */
+    @keyframes gentleShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px) rotate(-0.8deg); }
+      40% { transform: translateX(8px) rotate(0.8deg); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .shake-fail {
+      animation: gentleShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Success Pop Pulse */
+    @keyframes popCelebrate {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.025); }
+      100% { transform: scale(1); }
+    }
+    .success-celebrate {
+      animation: popCelebrate 0.5s ease-out both;
+    }
+
+    /* On Fire Cozy Border */
+    .on-fire-glow {
+      box-shadow: 0 0 18px rgba(249, 115, 22, 0.35);
+      border-color: #f97316 !important;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between selection:bg-amber-200 selection:text-stone-900">
+
+  <!-- Three.js 3D Background Canvas -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Main Cozy Application Wrapper (Mobile-First 100dvh) -->
+  <div id="game-app" class="relative z-10 w-full max-w-md min-h-[100dvh] flex flex-col justify-between px-4 py-3 sm:px-6 sm:py-5 mx-auto">
+    
+    <!-- TOP BAR (HEADER) - Clean, Uncluttered, Cozy -->
+    <header class="w-full flex flex-col gap-2 pt-1">
+      <div class="flex items-center justify-between">
+        
+        <!-- Lives (Hearts) Pill -->
+        <div class="flex items-center gap-1.5 bg-white/95 border border-[#eedecf] px-3 py-1.5 rounded-full shadow-sm">
+          <div id="hearts-container" class="flex items-center gap-1">
+            <!-- Dynamic Hearts SVG -->
+          </div>
+        </div>
+
+        <!-- Level Indicator Pill -->
+        <div class="flex items-center gap-1.5 bg-white/95 border border-[#eedecf] px-3.5 py-1.5 rounded-full shadow-sm">
+          <span class="text-xs font-bold text-stone-400 uppercase tracking-wider">Nivel</span>
+          <span id="current-level-num" class="text-sm font-black text-stone-800">1</span>
+          <span class="text-xs font-semibold text-stone-300">/ 10</span>
+        </div>
+
+        <!-- Right: Streak & Sound Controls -->
+        <div class="flex items-center gap-2">
+          
+          <!-- Streak Pill with Flame -->
+          <div id="streak-badge" class="flex items-center gap-1.5 bg-white/95 border border-[#eedecf] px-3 py-1.5 rounded-full shadow-sm transition-all duration-300">
+            <svg id="flame-icon" class="w-4 h-4 text-orange-500 fill-current" viewBox="0 0 24 24">
+              <path d="M12 2c-.5 2.5-2.5 4.5-4 6-2 2-3 4.5-3 7 0 4.4 3.6 8 8 8s8-3.6 8-8c0-3.5-2.5-6.5-5-9-1 2-2 3-4 3 0-2.5 1-5 0-7z"/>
+            </svg>
+            <span id="streak-count" class="text-sm font-extrabold text-orange-600">0</span>
+          </div>
+
+          <!-- Sound Toggle Button -->
+          <button id="btn-sound" aria-label="Sonido" class="w-9 h-9 rounded-full bg-white/95 hover:bg-stone-50 border border-[#eedecf] flex items-center justify-center text-stone-600 shadow-sm active:scale-95 transition-all">
+            <svg id="sound-icon-on" class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+            <svg id="sound-icon-off" class="w-4 h-4 fill-current hidden text-stone-300" viewBox="0 0 24 24">
+              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+            </svg>
+          </button>
+
+          <!-- Help / Rules Button -->
+          <button id="btn-help" aria-label="Instrucciones" class="w-9 h-9 rounded-full bg-white/95 hover:bg-stone-50 border border-[#eedecf] flex items-center justify-center text-xs font-black text-stone-600 shadow-sm active:scale-95 transition-all">
+            ?
+          </button>
+        </div>
+      </div>
+
+      <!-- Global Cozy Progress Bar -->
+      <div class="w-full bg-[#eee5db] h-2 rounded-full overflow-hidden p-0.5 shadow-inner">
+        <div id="global-progress" class="h-full bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-400 rounded-full transition-all duration-500" style="width: 10%;"></div>
+      </div>
+    </header>
+
+    <!-- ON-FIRE STREAK BONUS BANNER (Visible when streak >= 4 without misses) -->
+    <div id="on-fire-banner" class="hidden my-1 py-1.5 px-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-800 flex items-center justify-center gap-2 shadow-sm animate-fire-glow">
+      <span class="text-sm">🔥</span>
+      <span class="text-xs font-black tracking-wider uppercase">¡Modo En Llamas! Precisión Impecable</span>
+      <span class="text-sm">⚡</span>
+    </div>
+
+    <!-- MAIN CENTRAL CARD: THE VISUAL SAMPLE & STAGE -->
+    <main id="main-card" class="relative bg-white rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-between border border-[#eedecf] shadow-cozy-card my-auto transition-all duration-300">
+      
+      <!-- Card Header: Category & Current Phase -->
+      <div class="w-full flex items-center justify-between pb-3 border-b border-stone-100 mb-3">
+        <span id="category-badge" class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-stone-100 text-stone-700 border border-stone-200">
+          Categoría
+        </span>
+
+        <span id="phase-tag" class="text-xs font-black uppercase px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
+          Memoriza
+        </span>
+      </div>
+
+      <!-- Memorization Timer Bar (Drains in 5s) -->
+      <div id="timer-container" class="w-full mb-3 flex flex-col gap-1.5">
+        <div class="flex justify-between items-center text-xs font-bold text-stone-500 px-0.5">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            Memoriza los datos técnicos
+          </span>
+          <span id="timer-text" class="font-mono text-emerald-600 font-black text-sm">5.0s</span>
+        </div>
+        <div class="w-full bg-[#eedecf]/60 h-2.5 rounded-full overflow-hidden p-0.5">
+          <div id="memorize-timer-bar" class="h-full bg-emerald-500 rounded-full transition-all ease-linear" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- THE VISUAL SAMPLE FRAME (Clean, large format for phone screens) -->
+      <div id="sample-stage" class="w-full aspect-[16/10] rounded-2xl overflow-hidden border border-stone-200/90 shadow-inner relative flex items-center justify-center bg-stone-50 transition-all duration-300">
+        <!-- Visual content injected dynamically -->
+      </div>
+
+      <!-- TECHNICAL DETAILS PANEL (Visible ONLY during Phase 1: Memorization) -->
+      <div id="technical-panel" class="w-full mt-3.5 p-3 rounded-2xl bg-[#faf7f2] border border-[#eedecf] flex flex-col items-center justify-center transition-all duration-300">
+        <span class="text-[10px] uppercase font-bold tracking-widest text-stone-400 mb-1.5">
+          Fórmula Técnica a Retener
+        </span>
+        <div id="technical-formula" class="flex items-center justify-center gap-2 flex-wrap">
+          <!-- Dynamic formula badges -->
+        </div>
+        <button id="btn-skip-timer" class="mt-3 text-xs font-black text-stone-600 hover:text-stone-900 px-4 py-1.5 rounded-full bg-white hover:bg-stone-50 border border-[#eedecf] shadow-sm transition-all flex items-center gap-1.5 active:scale-95">
+          <span>¡Ya lo memoricé!</span>
+          <svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- CONSTRUCTION SLOTS PANEL (Visible during Phase 2: Construction) -->
+      <div id="construction-panel" class="w-full mt-3 flex flex-col items-center hidden transition-all duration-300">
+        
+        <!-- 10-Second Response Timer Bar -->
+        <div id="construct-timer-container" class="w-full mb-2 flex flex-col gap-1">
+          <div class="flex justify-between items-center text-xs font-bold text-stone-500 px-0.5">
+            <span class="flex items-center gap-1.5">
+              <span id="construct-timer-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+              <span>Tiempo para responder:</span>
+            </span>
+            <span id="construct-timer-text" class="font-mono text-amber-600 font-black text-sm">10.0s</span>
+          </div>
+          <div class="w-full bg-[#eedecf]/60 h-2 rounded-full overflow-hidden p-0.5">
+            <div id="construct-timer-bar" class="h-full bg-amber-500 rounded-full transition-all ease-linear" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between w-full mb-2 px-1">
+          <span class="text-xs font-extrabold text-stone-600">
+            Reconstruye la fórmula técnica:
+          </span>
+          <span class="text-[11px] font-medium text-stone-400">
+            Toca slot para retirar
+          </span>
+        </div>
+        
+        <!-- Target Slots Row (4 Cozy Rounded Boxes) -->
+        <div id="slots-container" class="w-full grid grid-cols-4 gap-2 sm:gap-2.5">
+          <!-- Dynamic Slots injected here -->
+        </div>
+      </div>
+
+    </main>
+
+    <!-- BOTTOM INTERACTIVE AREA: CHIP BANK -->
+    <footer class="w-full flex flex-col gap-2 pt-3 pb-2">
+      <div class="flex items-center justify-between px-1">
+        <span class="text-xs font-black uppercase tracking-wider text-stone-400">
+          Banco de Fichas
+        </span>
+        <span class="text-[11px] font-extrabold text-amber-700 flex items-center gap-1 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-300/80 shadow-xs">
+          ⚡ Evaluación instantánea al completar
+        </span>
+      </div>
+
+      <!-- Scrambled Chips Bank (Tactile, pillowy buttons) -->
+      <div id="chips-bank" class="w-full min-h-[92px] p-3 rounded-3xl bg-white/95 border border-[#eedecf] flex flex-wrap gap-2.5 items-center justify-center shadow-sm transition-all duration-200">
+        <!-- Dynamic chips injected here -->
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- CENTERED SUCCESS MODAL (LEVEL PASSED) - REQUIRES EXPLICIT USER CLICK TO ADVANCE -->
+  <div id="modal-success" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm hidden">
+    <div class="w-full max-w-sm bg-[#fffdfa] rounded-3xl p-6 sm:p-7 border border-[#eedecf] shadow-cozy-modal flex flex-col items-center text-center transform transition-all duration-200 scale-100">
+      
+      <!-- Celebratory Icon Badge -->
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-400 via-teal-400 to-green-500 p-0.5 shadow-md mb-3.5 animate-bounce-gentle">
+        <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center text-2xl">
+          ✨
+        </div>
+      </div>
+
+      <span id="success-modal-pill" class="text-xs font-black tracking-wider uppercase text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 mb-2">
+        ¡Acierto Clínico!
+      </span>
+
+      <h3 id="success-modal-title" class="text-2xl font-black text-stone-900 mb-2">
+        ¡Ojo Clínico Perfecto!
+      </h3>
+
+      <p id="success-modal-desc" class="text-xs text-stone-600 mb-5 leading-relaxed bg-[#faf7f2] p-3 rounded-2xl border border-[#eedecf]">
+        <!-- Explanation injected dynamically -->
+      </p>
+
+      <!-- Stats Summary -->
+      <div class="w-full grid grid-cols-2 gap-2.5 mb-6">
+        <div class="p-2.5 rounded-2xl bg-white border border-[#eedecf]">
+          <span class="text-[10px] font-black uppercase text-stone-400 block">Racha Actual</span>
+          <span id="success-modal-streak" class="text-lg font-black text-orange-600">1 🔥</span>
+        </div>
+        <div class="p-2.5 rounded-2xl bg-white border border-[#eedecf]">
+          <span class="text-[10px] font-black uppercase text-stone-400 block">Vidas Restantes</span>
+          <span id="success-modal-lives" class="text-lg font-black text-rose-500">3 / 3 ❤️</span>
+        </div>
+      </div>
+
+      <!-- Action Button (STAYS OPEN UNTIL CLICKED) -->
+      <button id="btn-next-level" class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-white btn-green-tactile active:scale-95 transition-all">
+        Siguiente Nivel ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- CENTERED FAILURE MODAL (LIFE DEDUCTED) -->
+  <div id="modal-failure" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm hidden">
+    <div class="w-full max-w-sm bg-[#fffdfa] rounded-3xl p-6 sm:p-7 border border-rose-200 shadow-cozy-modal flex flex-col items-center text-center transform transition-all duration-200">
+      
+      <!-- Broken / Miss Icon -->
+      <div class="w-16 h-16 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-2xl mb-3.5">
+        💔
+      </div>
+
+      <span id="failure-modal-pill" class="text-xs font-black tracking-wider uppercase text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 mb-2">
+        Fallo de Calibración
+      </span>
+
+      <h3 id="failure-modal-title" class="text-2xl font-black text-stone-900 mb-2">
+        ¡Uy! Casi lo tienes
+      </h3>
+
+      <p id="failure-modal-desc" class="text-xs text-stone-600 mb-5 leading-relaxed bg-[#faf7f2] p-3 rounded-2xl border border-[#eedecf]">
+        Has perdido una vida. Vuelve a estudiar la muestra visual para fijar con precisión las características técnicas.
+      </p>
+
+      <div class="w-full p-2.5 rounded-2xl bg-white border border-[#eedecf] mb-6 flex justify-between items-center px-4">
+        <span class="text-xs font-bold text-stone-500">Vidas restantes:</span>
+        <div id="failure-modal-hearts" class="flex gap-1 text-base">
+          <!-- Injected hearts -->
+        </div>
+      </div>
+
+      <button id="btn-retry-level" class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-wider bg-rose-500 hover:bg-rose-600 text-white btn-coral-tactile active:scale-95 transition-all">
+        Volver a Memorizar ↻
+      </button>
+    </div>
+  </div>
+
+  <!-- ONBOARDING MODAL (ENTRADA) -->
+  <div id="modal-onboarding" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md">
+    <div class="w-full max-w-sm bg-[#fffdfa] rounded-3xl p-6 sm:p-7 border border-[#eedecf] shadow-cozy-modal flex flex-col items-center text-center">
+      
+      <!-- Logo Oficial INATEC Tecnológico Nacional -->
+      <div class="w-full flex justify-center mb-2.5">
+        <img src="inatec_tecnologico_nacional.svg" alt="INATEC Tecnológico Nacional" class="h-14 w-auto object-contain max-w-[210px] filter drop-shadow-xs" />
+      </div>
+
+      <!-- Centro Tecnológico Ricardo Morales Avilés -->
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#faf7f2] border border-[#eedecf] mb-3 shadow-2xs">
+        <span class="text-[11px] font-black tracking-wide text-stone-700">
+          CT. Ricardo Morales Avilés — Diriamba
+        </span>
+      </div>
+
+      <h2 class="text-2xl font-black tracking-tight text-stone-900 mb-0.5">
+        MEMORIA DE DISEÑO
+      </h2>
+      <p class="text-xs font-extrabold uppercase tracking-widest text-emerald-600 mb-4">
+        Entrenador de Ojo Clínico // Branding
+      </p>
+
+      <!-- Rules list -->
+      <div class="w-full flex flex-col gap-2.5 text-left mb-6 text-xs text-stone-600">
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-[#faf7f2] border border-[#eedecf]">
+          <span class="text-base">⏱️</span>
+          <div>
+            <strong class="text-stone-900 block font-bold">1. Memoriza en 5 Segundos</strong>
+            Observa la muestra visual y retén sus valores técnicos (hexadecimales, degradados o tipografía).
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-[#faf7f2] border border-[#eedecf]">
+          <span class="text-base">🧩</span>
+          <div>
+            <strong class="text-stone-900 block font-bold">2. Construcción Táctil (10s de Límite)</strong>
+            La muestra se queda visible. Tienes 10 segundos para colocar las 4 fichas en las ranuras. Si se agota el tiempo, ¡pierdes una vida!
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-[#faf7f2] border border-[#eedecf]">
+          <span class="text-base">⚡</span>
+          <div>
+            <strong class="text-stone-900 block font-bold">3. Evaluación Instantánea</strong>
+            ¡Sin botón de comprobar! La última ficha evalúa de inmediato. Un error resta una vida.
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-[#faf7f2] border border-[#eedecf]">
+          <span class="text-base">❤️</span>
+          <div>
+            <strong class="text-stone-900 block font-bold">4. 3 Vidas Compartidas para todo el Juego</strong>
+            Tienes 3 vidas para todo el recorrido (no se restauran al pasar de nivel). Si pierdes las 3 vidas, es Game Over y comienzas desde el nivel 1.
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-start-game" class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-white btn-green-tactile active:scale-95 transition-all">
+        ¡Comenzar Desafío!
+      </button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="modal-gameover" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md hidden">
+    <div class="w-full max-w-sm bg-[#fffdfa] rounded-3xl p-6 sm:p-7 border border-rose-200 shadow-cozy-modal flex flex-col items-center text-center">
+      <div class="w-16 h-16 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-3xl mb-3.5">
+        💔
+      </div>
+      <h3 class="text-2xl font-black text-stone-900 mb-1">Fin de la Partida</h3>
+      <p class="text-xs text-stone-500 mb-5">Se han agotado tus 3 vidas. El ojo clínico de branding requiere práctica constante.</p>
+
+      <div class="w-full grid grid-cols-2 gap-3 mb-6">
+        <div class="p-3 rounded-2xl bg-stone-50 border border-stone-200">
+          <span class="text-[10px] font-black uppercase text-stone-400 block">Nivel Alcanzado</span>
+          <span id="gameover-level" class="text-xl font-black text-stone-900">1</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-stone-50 border border-stone-200">
+          <span class="text-[10px] font-black uppercase text-stone-400 block">Racha Final</span>
+          <span id="gameover-streak" class="text-xl font-black text-orange-600">0</span>
+        </div>
+      </div>
+
+      <button id="btn-restart-game" class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-wider bg-rose-500 hover:bg-rose-600 text-white btn-coral-tactile active:scale-95 transition-all">
+        Reintentar Desafío ↻
+      </button>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL (10 NIVELES COMPLETADOS) -->
+  <div id="modal-victory" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md hidden">
+    <div class="w-full max-w-sm bg-[#fffdfa] rounded-3xl p-6 sm:p-7 border border-amber-300 shadow-cozy-modal flex flex-col items-center text-center">
+      <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-emerald-400 p-1 shadow-lg mb-3.5 animate-bounce-gentle">
+        <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-3xl">
+          👑
+        </div>
+      </div>
+      
+      <span class="text-xs font-black tracking-widest text-amber-700 uppercase bg-amber-100 px-3.5 py-1 rounded-full border border-amber-300 mb-2">
+        Acreditación de Excelencia
+      </span>
+
+      <h3 class="text-2xl font-black text-stone-900 mb-2">¡Ojo Clínico Absoluto!</h3>
+      <p class="text-xs text-stone-600 mb-5 leading-relaxed bg-[#faf7f2] p-3 rounded-2xl border border-[#eedecf]">
+        Has superado los 10 desafíos de memoria y calibración de branding, dominando los valores cromáticos hexadecimales, proporciones de degradado y jerarquías tipográficas de élite.
+      </p>
+
+      <div class="w-full p-3 rounded-2xl bg-white border border-[#eedecf] mb-6 flex flex-col gap-2">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-stone-500 font-semibold">Racha Final de Niveles:</span>
+          <span id="victory-streak" class="font-black text-orange-600">10 🔥</span>
+        </div>
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-stone-500 font-semibold">Calificación de Branding:</span>
+          <span class="font-black text-emerald-600">Director de Arte</span>
+        </div>
+      </div>
+
+      <button id="btn-replay-game" class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-white btn-green-tactile active:scale-95 transition-all">
+        Jugar de Nuevo
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT: SOUND ENGINE, 3D SCENE & GAME CONTROLLER -->
+  <script>
+    /* ==========================================================================
+       1. WEB AUDIO PROCEDURAL SYNTHESIZER (WARM COZY SOUNDS)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+      }
+
+      // Warm wooden marimba tap for chips
+      playChipTap() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.09);
+
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        } catch (e) {}
+      }
+
+      // Soft removal tap
+      playRemoveTap() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(240, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(380, this.ctx.currentTime + 0.07);
+
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.07);
+        } catch (e) {}
+      }
+
+      // Soft clock tick
+      playTick() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(700, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.035);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.035);
+        } catch (e) {}
+      }
+
+      // Harmonious Major Chime (C5, E5, G5, C6)
+      playCorrect() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.24, this.ctx.currentTime + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.45);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.08);
+            osc.stop(this.ctx.currentTime + idx * 0.08 + 0.45);
+          });
+        } catch (e) {}
+      }
+
+      // High Streak Fanfare (Modo En Llamas)
+      playBonusCombo() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const notes = [523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.06);
+
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.26, this.ctx.currentTime + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.06 + 0.5);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.06);
+            osc.stop(this.ctx.currentTime + idx * 0.06 + 0.5);
+          });
+        } catch (e) {}
+      }
+
+      // Soft Dissonant Wobble (Failure)
+      playWrong() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          [160, 145].forEach(freq => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.3);
+          });
+        } catch (e) {}
+      }
+
+      // Game Over Gentle Melancholy
+      playGameOver() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const notes = [311.13, 261.63, 207.65, 196.00];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.16);
+
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.22, this.ctx.currentTime + idx * 0.16);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.16 + 0.6);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.16);
+            osc.stop(this.ctx.currentTime + idx * 0.16 + 0.6);
+          });
+        } catch (e) {}
+      }
+
+      // Victory Fanfare
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const arpeggio = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50, 1318.51];
+          arpeggio.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+
+            gain.gain.setValueAtTime(0.26, this.ctx.currentTime + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.7);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.1);
+            osc.stop(this.ctx.currentTime + idx * 0.1 + 0.7);
+          });
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ==========================================================================
+       2. THREE.JS 3D BACKGROUND (PASTEL CLAY TOKENS & CONFETTI)
+       ========================================================================== */
+    class Background3D {
+      constructor() {
+        this.canvas = document.getElementById('three-canvas');
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.floatingGroup = null;
+        this.pointLight = null;
+        this.confettiParticles = null;
+        this.confettiGeometry = null;
+        this.isConfettiActive = false;
+        this.confettiTime = 0;
+        this.mouseX = 0;
+        this.mouseY = 0;
+
+        this.init();
+      }
+
+      init() {
+        if (!window.THREE) return;
+
+        try {
+          this.scene = new THREE.Scene();
+          this.scene.fog = new THREE.FogExp2(0xfaf7f2, 0.04);
+
+          this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+          this.camera.position.z = 18;
+
+          this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, alpha: true, antialias: true });
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+          // Soft warm lighting
+          const ambientLight = new THREE.AmbientLight(0xfffbf5, 0.85);
+          this.scene.add(ambientLight);
+
+          this.pointLight = new THREE.PointLight(0x10b981, 1.8, 50);
+          this.pointLight.position.set(0, 5, 10);
+          this.scene.add(this.pointLight);
+
+          this.floatingGroup = new THREE.Group();
+          this.scene.add(this.floatingGroup);
+
+          // Matte pastel design materials
+          const matClay = new THREE.MeshStandardMaterial({
+            color: 0xe8dfd5,
+            roughness: 0.6,
+            metalness: 0.05
+          });
+
+          const matAccent = new THREE.MeshStandardMaterial({
+            color: 0x34d399,
+            roughness: 0.45,
+            metalness: 0.1
+          });
+
+          // Floating Torus
+          const torusGeom = new THREE.TorusGeometry(3.5, 0.65, 16, 64);
+          this.torusMesh = new THREE.Mesh(torusGeom, matClay);
+          this.torusMesh.position.set(-6, 3, -4);
+          this.floatingGroup.add(this.torusMesh);
+
+          // Icosahedron
+          const icoGeom = new THREE.IcosahedronGeometry(2.3, 0);
+          this.icoMesh = new THREE.Mesh(icoGeom, matAccent);
+          this.icoMesh.position.set(6, -3, -2);
+          this.floatingGroup.add(this.icoMesh);
+
+          // Floating pastel cubes
+          this.swatchCubes = [];
+          const pastelColors = [0xfbcfe8, 0xfef08a, 0xbfdbfe, 0xbbf7d0, 0xfecdd3];
+          for (let i = 0; i < 6; i++) {
+            const cubeGeom = new THREE.BoxGeometry(0.85, 0.85, 0.85);
+            const cubeMat = new THREE.MeshStandardMaterial({
+              color: pastelColors[i % pastelColors.length],
+              roughness: 0.5,
+              metalness: 0.05
+            });
+            const cube = new THREE.Mesh(cubeGeom, cubeMat);
+            cube.position.set(
+              (Math.random() - 0.5) * 22,
+              (Math.random() - 0.5) * 16,
+              (Math.random() - 0.5) * 8 - 2
+            );
+            this.floatingGroup.add(cube);
+            this.swatchCubes.push({
+              mesh: cube,
+              rotSpeedX: (Math.random() - 0.5) * 0.015,
+              rotSpeedY: (Math.random() - 0.5) * 0.015,
+              floatSpeed: 0.005 + Math.random() * 0.01,
+              initialY: cube.position.y
+            });
+          }
+
+          this.setupConfetti();
+
+          window.addEventListener('resize', () => this.onResize());
+          window.addEventListener('pointermove', (e) => this.onPointerMove(e));
+
+          this.animate();
+        } catch (e) {
+          console.warn('Three.js / WebGL fallback:', e);
+        }
+      }
+
+      setupConfetti() {
+        const particleCount = 200;
+        this.confettiGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        this.confettiVelocities = [];
+
+        const palette = [
+          new THREE.Color(0x34d399),
+          new THREE.Color(0xfb923c),
+          new THREE.Color(0xf472b6),
+          new THREE.Color(0x60a5fa),
+          new THREE.Color(0xfacc15)
+        ];
+
+        for (let i = 0; i < particleCount; i++) {
+          positions[i * 3] = 0;
+          positions[i * 3 + 1] = 0;
+          positions[i * 3 + 2] = 5;
+
+          const col = palette[i % palette.length];
+          colors[i * 3] = col.r;
+          colors[i * 3 + 1] = col.g;
+          colors[i * 3 + 2] = col.b;
+
+          this.confettiVelocities.push({
+            x: (Math.random() - 0.5) * 0.4,
+            y: (Math.random() * 0.35 + 0.15),
+            z: (Math.random() - 0.5) * 0.3,
+            gravity: 0.007
+          });
+        }
+
+        this.confettiGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.confettiGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({
+          size: 0.35,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0
+        });
+
+        this.confettiParticles = new THREE.Points(this.confettiGeometry, particleMaterial);
+        this.scene.add(this.confettiParticles);
+      }
+
+      burstConfetti() {
+        if (!this.confettiParticles || !this.renderer) return;
+        this.isConfettiActive = true;
+        this.confettiTime = 0;
+        this.confettiParticles.material.opacity = 1.0;
+
+        const posAttr = this.confettiGeometry.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+          posAttr.setXYZ(i, (Math.random() - 0.5) * 2, -2 + Math.random() * 2, 8);
+          this.confettiVelocities[i] = {
+            x: (Math.random() - 0.5) * 0.35,
+            y: Math.random() * 0.35 + 0.1,
+            z: (Math.random() - 0.5) * 0.25,
+            gravity: 0.007
+          };
+        }
+        posAttr.needsUpdate = true;
+      }
+
+      updateLevelColor(hexColor) {
+        if (this.pointLight && window.THREE && this.renderer) {
+          const col = new THREE.Color(hexColor);
+          this.pointLight.color.set(col);
+          if (this.icoMesh) {
+            this.icoMesh.material.color.set(col);
+          }
+        }
+      }
+
+      onResize() {
+        if (!this.camera || !this.renderer) return;
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      onPointerMove(e) {
+        this.mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+        this.mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+      }
+
+      animate() {
+        if (!this.renderer || !this.scene || !this.camera) return;
+        requestAnimationFrame(() => this.animate());
+
+        const time = Date.now() * 0.001;
+
+        if (this.camera) {
+          this.camera.position.x += (this.mouseX * 2 - this.camera.position.x) * 0.04;
+          this.camera.position.y += (-this.mouseY * 1.5 - this.camera.position.y) * 0.04;
+          this.camera.lookAt(0, 0, 0);
+        }
+
+        if (this.torusMesh) {
+          this.torusMesh.rotation.x += 0.005;
+          this.torusMesh.rotation.y += 0.007;
+        }
+        if (this.icoMesh) {
+          this.icoMesh.rotation.x -= 0.006;
+          this.icoMesh.rotation.y += 0.009;
+        }
+
+        if (this.swatchCubes) {
+          this.swatchCubes.forEach((cube) => {
+            cube.mesh.rotation.x += cube.rotSpeedX;
+            cube.mesh.rotation.y += cube.rotSpeedY;
+            cube.mesh.position.y = cube.initialY + Math.sin(time * 2 + cube.initialY) * 0.4;
+          });
+        }
+
+        if (this.isConfettiActive && this.confettiParticles) {
+          this.confettiTime++;
+          const posAttr = this.confettiGeometry.attributes.position;
+          for (let i = 0; i < posAttr.count; i++) {
+            const v = this.confettiVelocities[i];
+            const px = posAttr.getX(i) + v.x;
+            const py = posAttr.getY(i) + v.y;
+            const pz = posAttr.getZ(i) + v.z;
+            v.y -= v.gravity;
+            posAttr.setXYZ(i, px, py, pz);
+          }
+          posAttr.needsUpdate = true;
+          this.confettiParticles.material.opacity = Math.max(0, 1 - this.confettiTime / 85);
+
+          if (this.confettiTime > 85) {
+            this.isConfettiActive = false;
+          }
+        }
+
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    const bg3d = new Background3D();
+
+    /* ==========================================================================
+       3. LEVEL DATABASE (10 PROGRESSIVE BRANDING CHALLENGES)
+       ========================================================================== */
+    const LEVELS = [
+      // NIVEL 1: Hexadecimal - Rojo Escarlata
+      {
+        level: 1,
+        category: 'hex',
+        categoryName: '🎨 Color Hexadecimal',
+        visual: {
+          type: 'color',
+          value: '#E11D48',
+          name: 'Escarlata Editorial'
+        },
+        formulaBadges: [
+          { text: '#', label: 'Prefijo' },
+          { text: 'E1', label: 'Canal Rojo' },
+          { text: '1D', label: 'Canal Verde' },
+          { text: '48', label: 'Canal Azul' }
+        ],
+        solution: ['#', 'E1', '1D', '48'],
+        slots: [
+          { label: '#' },
+          { label: 'Rojo (R)' },
+          { label: 'Verde (G)' },
+          { label: 'Azul (B)' }
+        ],
+        chips: ['#', 'E1', '1D', '48', 'FE', '1B', '42'],
+        explanation: 'El color Escarlata #E11D48 presenta una dominancia máxima en el canal rojo (E1) con valores sutiles en verde y azul.'
+      },
+
+      // NIVEL 2: Degradado - Océano Profundo
+      {
+        level: 2,
+        category: 'gradient',
+        categoryName: '🌈 Proporción de Degradado',
+        visual: {
+          type: 'gradient',
+          colors: ['#1E40AF', '#06B6D4'],
+          gradientCss: 'linear-gradient(135deg, #1E40AF 0%, #1E40AF 70%, #06B6D4 100%)',
+          name: 'Transición Abisal'
+        },
+        formulaBadges: [
+          { text: 'Azul', label: 'Dominante' },
+          { text: '70%', label: 'Extensión' },
+          { text: 'Cyan', label: 'Secundario' },
+          { text: '30%', label: 'Extensión' }
+        ],
+        solution: ['Azul', '70%', 'Cyan', '30%'],
+        slots: [
+          { label: 'Color 1' },
+          { label: 'Porcentaje' },
+          { label: 'Color 2' },
+          { label: 'Porcentaje' }
+        ],
+        chips: ['Azul', '70%', 'Cyan', '30%', '80%', '20%', '50%', 'Celeste'],
+        explanation: 'El degradado mantiene un 70% de Azul marino profundo antes de transicionar al 30% final de Cyan brillante.'
+      },
+
+      // NIVEL 3: Tipografía - Display y Sans-Serif
+      {
+        level: 3,
+        category: 'typography',
+        categoryName: '✒️ Jerarquía Tipográfica',
+        visual: {
+          type: 'typography',
+          headlineText: 'PORTAFOLIO',
+          headlineFont: 'Cinzel, serif',
+          headlineStyle: 'Display',
+          headlinePt: '64pt',
+          headlinePx: '32px',
+          bodyText: 'La dirección de arte define la personalidad de marca.',
+          bodyFont: 'Outfit, sans-serif',
+          bodyStyle: 'Sans-Serif',
+          bodyPt: '14pt',
+          bodyPx: '13px',
+          name: 'Composición de Portada'
+        },
+        formulaBadges: [
+          { text: 'Display', label: 'Titular' },
+          { text: '64pt', label: 'Tamaño' },
+          { text: 'Sans-Serif', label: 'Cuerpo' },
+          { text: '14pt', label: 'Tamaño' }
+        ],
+        solution: ['Display', '64pt', 'Sans-Serif', '14pt'],
+        slots: [
+          { label: 'Tipo Titular' },
+          { label: 'Puntos Titular' },
+          { label: 'Tipo Cuerpo' },
+          { label: 'Puntos Cuerpo' }
+        ],
+        chips: ['Display', '64pt', 'Sans-Serif', '14pt', 'Serif', '72pt', '18pt', 'Script'],
+        explanation: 'El titular emplea una familia Display clásica a 64pt contrastada con una bajada editorial Sans-Serif a 14pt.'
+      },
+
+      // NIVEL 4: Hexadecimal - Verde Esmeralda de Identidad
+      {
+        level: 4,
+        category: 'hex',
+        categoryName: '🎨 Color Hexadecimal',
+        visual: {
+          type: 'color',
+          value: '#10B981',
+          name: 'Esmeralda Corporativo'
+        },
+        formulaBadges: [
+          { text: '#', label: 'Prefijo' },
+          { text: '10', label: 'Canal Rojo' },
+          { text: 'B9', label: 'Canal Verde' },
+          { text: '81', label: 'Canal Azul' }
+        ],
+        solution: ['#', '10', 'B9', '81'],
+        slots: [
+          { label: '#' },
+          { label: 'Rojo (R)' },
+          { label: 'Verde (G)' },
+          { label: 'Azul (B)' }
+        ],
+        chips: ['#', '10', 'B9', '81', '11', 'B8', '91', '80'],
+        explanation: 'La notación #10B981 destaca por su canal verde primario (B9) y balance complementario en azul (81).'
+      },
+
+      // NIVEL 5: Degradado - Atardecer Cálido
+      {
+        level: 5,
+        category: 'gradient',
+        categoryName: '🌈 Proporción de Degradado',
+        visual: {
+          type: 'gradient',
+          colors: ['#EA580C', '#F59E0B'],
+          gradientCss: 'linear-gradient(135deg, #EA580C 0%, #EA580C 60%, #F59E0B 100%)',
+          name: 'Atmósfera Solar'
+        },
+        formulaBadges: [
+          { text: 'Naranja', label: 'Dominante' },
+          { text: '60%', label: 'Extensión' },
+          { text: 'Ámbar', label: 'Secundario' },
+          { text: '40%', label: 'Extensión' }
+        ],
+        solution: ['Naranja', '60%', 'Ámbar', '40%'],
+        slots: [
+          { label: 'Color 1' },
+          { label: 'Porcentaje' },
+          { label: 'Color 2' },
+          { label: 'Porcentaje' }
+        ],
+        chips: ['Naranja', '60%', 'Ámbar', '40%', '70%', '30%', '50%', 'Dorado'],
+        explanation: 'El tono Naranja domina el 60% inicial antes de entrelazarse suavemente con un 40% de Ámbar dorado.'
+      },
+
+      // NIVEL 6: Tipografía - Editorial Clásico
+      {
+        level: 6,
+        category: 'typography',
+        categoryName: '✒️ Jerarquía Tipográfica',
+        visual: {
+          type: 'typography',
+          headlineText: 'MANIFIESTO',
+          headlineFont: 'Playfair Display, serif',
+          headlineStyle: 'Serif',
+          headlinePt: '48pt',
+          headlinePx: '30px',
+          bodyText: 'REF: #MOD-2026 // MANUAL DE IDENTIDAD VISUAL',
+          bodyFont: 'JetBrains Mono, monospace',
+          bodyStyle: 'Monospace',
+          bodyPt: '12pt',
+          bodyPx: '11px',
+          name: 'Publicación Editorial'
+        },
+        formulaBadges: [
+          { text: 'Serif', label: 'Titular' },
+          { text: '48pt', label: 'Tamaño' },
+          { text: 'Monospace', label: 'Ficha' },
+          { text: '12pt', label: 'Tamaño' }
+        ],
+        solution: ['Serif', '48pt', 'Monospace', '12pt'],
+        slots: [
+          { label: 'Tipo Titular' },
+          { label: 'Puntos Titular' },
+          { label: 'Tipo Cuerpo' },
+          { label: 'Puntos Cuerpo' }
+        ],
+        chips: ['Serif', '48pt', 'Monospace', '12pt', 'Display', '36pt', 'Sans-Serif', '16pt'],
+        explanation: 'Contraste editorial clásico: un titular en tipografía Serif a 48pt respaldado por notas en Monospace a 12pt.'
+      },
+
+      // NIVEL 7: Hexadecimal - Violeta Neón de Alta Energía
+      {
+        level: 7,
+        category: 'hex',
+        categoryName: '🎨 Color Hexadecimal',
+        visual: {
+          type: 'color',
+          value: '#8B5CF6',
+          name: 'Violeta Eléctrico'
+        },
+        formulaBadges: [
+          { text: '#', label: 'Prefijo' },
+          { text: '8B', label: 'Canal Rojo' },
+          { text: '5C', label: 'Canal Verde' },
+          { text: 'F6', label: 'Canal Azul' }
+        ],
+        solution: ['#', '8B', '5C', 'F6'],
+        slots: [
+          { label: '#' },
+          { label: 'Rojo (R)' },
+          { label: 'Verde (G)' },
+          { label: 'Azul (B)' }
+        ],
+        chips: ['#', '8B', '5C', 'F6', '8A', '5B', 'F8', '7C', '6C'],
+        explanation: 'El violeta neón #8B5CF6 posee una saturación sobresaliente en el canal azul (F6) con apoyo en rojo (8B).'
+      },
+
+      // NIVEL 8: Degradado - Duotono de Proporciones Próximas
+      {
+        level: 8,
+        category: 'gradient',
+        categoryName: '🌈 Proporción de Degradado',
+        visual: {
+          type: 'gradient',
+          colors: ['#D946EF', '#8B5CF6'],
+          gradientCss: 'linear-gradient(135deg, #D946EF 0%, #D946EF 55%, #8B5CF6 100%)',
+          name: 'Duotono Armónico'
+        },
+        formulaBadges: [
+          { text: 'Magenta', label: 'Dominante' },
+          { text: '55%', label: 'Extensión' },
+          { text: 'Violeta', label: 'Secundario' },
+          { text: '45%', label: 'Extensión' }
+        ],
+        solution: ['Magenta', '55%', 'Violeta', '45%'],
+        slots: [
+          { label: 'Color 1' },
+          { label: 'Porcentaje' },
+          { label: 'Color 2' },
+          { label: 'Porcentaje' }
+        ],
+        chips: ['Magenta', '55%', 'Violeta', '45%', '60%', '40%', '50%', 'Índigo', 'Morado'],
+        explanation: 'El Magenta domina levemente con 55% de corte frente al 45% de Violeta; requiere máxima agudeza de ojo clínico.'
+      },
+
+      // NIVEL 9: Tipografía (DIFICULTAD CLÍNICA AVANZADA)
+      {
+        level: 9,
+        category: 'typography',
+        categoryName: '✒️ Jerarquía Tipográfica (Clínico)',
+        visual: {
+          type: 'typography',
+          headlineText: 'VANGUARDIA',
+          headlineFont: 'Playfair Display, serif',
+          headlineStyle: 'Serif',
+          headlinePt: '56pt',
+          headlinePx: '32px',
+          bodyText: 'La simetría dinámica genera una cadencia de lectura orgánica.',
+          bodyFont: 'Outfit, sans-serif',
+          bodyStyle: 'Sans-Serif',
+          bodyPt: '13pt',
+          bodyPx: '12px',
+          name: 'Edición de Moda y Vanguardia'
+        },
+        formulaBadges: [
+          { text: 'Serif', label: 'Titular' },
+          { text: '56pt', label: 'Tamaño' },
+          { text: 'Sans-Serif', label: 'Cuerpo' },
+          { text: '13pt', label: 'Tamaño' }
+        ],
+        solution: ['Serif', '56pt', 'Sans-Serif', '13pt'],
+        slots: [
+          { label: 'Tipo Titular' },
+          { label: 'Puntos Titular' },
+          { label: 'Tipo Cuerpo' },
+          { label: 'Puntos Cuerpo' }
+        ],
+        chips: ['Serif', '56pt', 'Sans-Serif', '13pt', '54pt', '58pt', '14pt', '12pt', 'Display', 'Grotesk'],
+        explanation: 'Nivel clínico: El titular está fijado en 56pt (trampas: 54pt y 58pt) y el cuerpo editorial en 13pt (trampas: 14pt y 12pt).'
+      },
+
+      // NIVEL 10: Hexadecimal (JEFE FINAL - PRECISIÓN QUIRÚRGICA)
+      {
+        level: 10,
+        category: 'hex',
+        categoryName: '🎨 Color Hexadecimal (Jefe Final)',
+        visual: {
+          type: 'color',
+          value: '#C8963E',
+          name: 'Ocre Dorado Maestro'
+        },
+        formulaBadges: [
+          { text: '#', label: 'Prefijo' },
+          { text: 'C8', label: 'Canal Rojo' },
+          { text: '96', label: 'Canal Verde' },
+          { text: '3E', label: 'Canal Azul' }
+        ],
+        solution: ['#', 'C8', '96', '3E'],
+        slots: [
+          { label: '#' },
+          { label: 'Rojo (R)' },
+          { label: 'Verde (G)' },
+          { label: 'Azul (B)' }
+        ],
+        chips: ['#', 'C8', '96', '3E', 'C9', 'C7', '97', '95', '3F', '3D'],
+        explanation: '¡Prueba suprema superada! El Ocre Dorado es exactamente #C8963E. Las trampas clínicas distaban de solo 1 unidad hex.'
+      }
+    ];
+    window.LEVELS = LEVELS;
+
+    /* ==========================================================================
+       4. GAME STATE CONTROLLER
+       ========================================================================== */
+    class GameController {
+      constructor() {
+        this.currentLevelIndex = 0;
+        this.lives = 3;
+        this.streak = 0;
+        this.flawlessStreak = 0;
+        this.bestStreak = 0;
+        
+        this.phase = 'idle'; // 'memorize' | 'construct' | 'evaluating'
+        this.timerRemaining = 5.0;
+        this.timerInterval = null;
+        this.timerTotal = 5.0;
+
+        this.constructTimerRemaining = 10.0;
+        this.constructTimerInterval = null;
+        this.constructTimerTotal = 10.0;
+
+        this.placedChips = [null, null, null, null];
+        this.availableChips = [];
+        this.isLocked = false;
+
+        this.cacheDOM();
+        this.bindEvents();
+        this.renderHearts();
+      }
+
+      cacheDOM() {
+        this.dom = {
+          heartsContainer: document.getElementById('hearts-container'),
+          streakCount: document.getElementById('streak-count'),
+          flameIcon: document.getElementById('flame-icon'),
+          streakBadge: document.getElementById('streak-badge'),
+          onFireBanner: document.getElementById('on-fire-banner'),
+          currentLevelNum: document.getElementById('current-level-num'),
+          globalProgress: document.getElementById('global-progress'),
+          btnSound: document.getElementById('btn-sound'),
+          soundIconOn: document.getElementById('sound-icon-on'),
+          soundIconOff: document.getElementById('sound-icon-off'),
+          btnHelp: document.getElementById('btn-help'),
+          
+          mainCard: document.getElementById('main-card'),
+          categoryBadge: document.getElementById('category-badge'),
+          phaseTag: document.getElementById('phase-tag'),
+          
+          timerContainer: document.getElementById('timer-container'),
+          timerText: document.getElementById('timer-text'),
+          memorizeTimerBar: document.getElementById('memorize-timer-bar'),
+          sampleStage: document.getElementById('sample-stage'),
+          technicalPanel: document.getElementById('technical-panel'),
+          technicalFormula: document.getElementById('technical-formula'),
+          btnSkipTimer: document.getElementById('btn-skip-timer'),
+          
+          constructionPanel: document.getElementById('construction-panel'),
+          constructTimerContainer: document.getElementById('construct-timer-container'),
+          constructTimerText: document.getElementById('construct-timer-text'),
+          constructTimerBar: document.getElementById('construct-timer-bar'),
+          constructTimerDot: document.getElementById('construct-timer-dot'),
+          slotsContainer: document.getElementById('slots-container'),
+          chipsBank: document.getElementById('chips-bank'),
+          
+          // Modals
+          modalSuccess: document.getElementById('modal-success'),
+          successModalPill: document.getElementById('success-modal-pill'),
+          successModalTitle: document.getElementById('success-modal-title'),
+          successModalDesc: document.getElementById('success-modal-desc'),
+          successModalStreak: document.getElementById('success-modal-streak'),
+          successModalLives: document.getElementById('success-modal-lives'),
+          btnNextLevel: document.getElementById('btn-next-level'),
+          
+          modalFailure: document.getElementById('modal-failure'),
+          failureModalPill: document.getElementById('failure-modal-pill'),
+          failureModalTitle: document.getElementById('failure-modal-title'),
+          failureModalDesc: document.getElementById('failure-modal-desc'),
+          failureModalHearts: document.getElementById('failure-modal-hearts'),
+          btnRetryLevel: document.getElementById('btn-retry-level'),
+
+          modalOnboarding: document.getElementById('modal-onboarding'),
+          btnStartGame: document.getElementById('btn-start-game'),
+          modalGameOver: document.getElementById('modal-gameover'),
+          gameoverLevel: document.getElementById('gameover-level'),
+          gameoverStreak: document.getElementById('gameover-streak'),
+          btnRestartGame: document.getElementById('btn-restart-game'),
+          modalVictory: document.getElementById('modal-victory'),
+          victoryStreak: document.getElementById('victory-streak'),
+          btnReplayGame: document.getElementById('btn-replay-game'),
+        };
+      }
+
+      bindEvents() {
+        this.dom.btnStartGame.addEventListener('click', () => {
+          sound.init();
+          sound.playChipTap();
+          this.dom.modalOnboarding.classList.add('hidden');
+          this.startLevel(0);
+        });
+
+        this.dom.btnSkipTimer.addEventListener('click', () => {
+          if (this.phase === 'memorize') {
+            sound.playChipTap();
+            this.endMemorizationPhase();
+          }
+        });
+
+        this.dom.btnSound.addEventListener('click', () => {
+          const isEnabled = sound.toggle();
+          this.dom.soundIconOn.classList.toggle('hidden', !isEnabled);
+          this.dom.soundIconOff.classList.toggle('hidden', isEnabled);
+        });
+
+        this.dom.btnHelp.addEventListener('click', () => {
+          sound.playChipTap();
+          this.dom.modalOnboarding.classList.remove('hidden');
+        });
+
+        // SUCCESS MODAL NEXT BUTTON (EXPLICIT USER ADVANCE)
+        this.dom.btnNextLevel.addEventListener('click', () => {
+          sound.playChipTap();
+          this.dom.modalSuccess.classList.add('hidden');
+          const isLastLevel = this.currentLevelIndex === LEVELS.length - 1;
+          if (isLastLevel) {
+            this.showVictoryModal();
+          } else {
+            this.startLevel(this.currentLevelIndex + 1);
+          }
+        });
+
+        // FAILURE MODAL RETRY BUTTON
+        this.dom.btnRetryLevel.addEventListener('click', () => {
+          sound.playChipTap();
+          this.dom.modalFailure.classList.add('hidden');
+          this.startLevel(this.currentLevelIndex);
+        });
+
+        this.dom.btnRestartGame.addEventListener('click', () => {
+          sound.playChipTap();
+          this.dom.modalGameOver.classList.add('hidden');
+          this.restartGame();
+        });
+
+        this.dom.btnReplayGame.addEventListener('click', () => {
+          sound.playChipTap();
+          this.dom.modalVictory.classList.add('hidden');
+          this.restartGame();
+        });
+      }
+
+      // Render 3 Hearts dynamically
+      renderHearts() {
+        this.dom.heartsContainer.innerHTML = '';
+        for (let i = 1; i <= 3; i++) {
+          const isFilled = i <= this.lives;
+          const heartSpan = document.createElement('span');
+          heartSpan.className = `inline-flex transition-transform duration-300 ${isFilled ? 'scale-100' : 'scale-90 opacity-25 grayscale'}`;
+          heartSpan.innerHTML = `
+            <svg class="w-4 h-4 ${isFilled ? 'text-rose-500 fill-current' : 'text-stone-300 fill-current'}" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          `;
+          this.dom.heartsContainer.appendChild(heartSpan);
+        }
+      }
+
+      // Update Streak Display & On-Fire Bonus
+      updateStreakUI() {
+        this.dom.streakCount.textContent = this.streak;
+        if (this.streak > this.bestStreak) {
+          this.bestStreak = this.streak;
+        }
+
+        const isOnFire = this.flawlessStreak >= 4;
+        if (isOnFire) {
+          this.dom.onFireBanner.classList.remove('hidden');
+          this.dom.streakBadge.classList.add('on-fire-glow');
+          this.dom.flameIcon.classList.add('animate-fire-glow');
+        } else {
+          this.dom.onFireBanner.classList.add('hidden');
+          this.dom.streakBadge.classList.remove('on-fire-glow');
+          this.dom.flameIcon.classList.remove('animate-fire-glow');
+        }
+      }
+
+      // Start Level
+      startLevel(levelIndex) {
+        clearInterval(this.timerInterval);
+        clearInterval(this.constructTimerInterval);
+        this.currentLevelIndex = levelIndex;
+        this.isLocked = false;
+        const levelData = LEVELS[this.currentLevelIndex];
+
+        // Update Top Bar
+        this.dom.currentLevelNum.textContent = levelData.level;
+        const progressPct = ((levelData.level - 1) / LEVELS.length) * 100 + 10;
+        this.dom.globalProgress.style.width = `${progressPct}%`;
+        this.updateStreakUI();
+
+        // Update Badges & 3D Lighting
+        this.dom.categoryBadge.textContent = levelData.categoryName;
+
+        if (levelData.category === 'hex') {
+          bg3d.updateLevelColor(levelData.visual.value);
+        } else if (levelData.category === 'gradient') {
+          bg3d.updateLevelColor(levelData.visual.colors[0]);
+        } else {
+          bg3d.updateLevelColor('#3b82f6');
+        }
+
+        // Reset Card Style
+        this.dom.mainCard.classList.remove('shake-fail', 'success-celebrate');
+
+        // Render Sample
+        this.renderSample(levelData);
+
+        // Render Formula Badges
+        this.renderFormula(levelData);
+
+        // Prepare Chips
+        this.prepareChips(levelData);
+
+        // Prepare Slots
+        this.renderSlots(levelData);
+
+        // Start Phase 1: Memorization
+        this.startMemorizationPhase();
+      }
+
+      // Render Visual Sample
+      renderSample(levelData) {
+        const stage = this.dom.sampleStage;
+        stage.innerHTML = '';
+
+        if (levelData.category === 'hex') {
+          stage.style.background = levelData.visual.value;
+          stage.innerHTML = `
+            <div class="relative z-10 px-4 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 text-center shadow-sm">
+              <span class="text-xs font-black text-stone-800 tracking-wide">${levelData.visual.name}</span>
+            </div>
+          `;
+        } else if (levelData.category === 'gradient') {
+          stage.style.background = levelData.visual.gradientCss;
+          stage.innerHTML = `
+            <div class="relative z-10 px-4 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 text-center shadow-sm">
+              <span class="text-xs font-black text-stone-800 tracking-wide">${levelData.visual.name}</span>
+            </div>
+          `;
+        } else if (levelData.category === 'typography') {
+          stage.style.background = '#ffffff';
+          stage.innerHTML = `
+            <div class="w-full h-full p-4 flex flex-col justify-center items-center text-center relative overflow-hidden bg-stone-50">
+              <div class="relative z-10 w-full flex flex-col items-center">
+                <span class="text-[9px] uppercase tracking-widest font-black text-stone-400 mb-1.5">Muestra Editorial</span>
+                <h1 style="font-family: ${levelData.visual.headlineFont}; font-size: ${levelData.visual.headlinePx};" class="font-black text-stone-900 tracking-wide leading-tight mb-2 drop-shadow-xs">
+                  ${levelData.visual.headlineText}
+                </h1>
+                <p style="font-family: ${levelData.visual.bodyFont}; font-size: ${levelData.visual.bodyPx};" class="text-stone-600 max-w-[260px] leading-snug font-medium">
+                  ${levelData.visual.bodyText}
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Render Technical Formula Badges
+      renderFormula(levelData) {
+        const container = this.dom.technicalFormula;
+        container.innerHTML = '';
+        levelData.formulaBadges.forEach(b => {
+          const badge = document.createElement('div');
+          badge.className = 'flex flex-col items-center bg-white border border-[#eedecf] px-3 py-1.5 rounded-xl shadow-xs';
+          badge.innerHTML = `
+            <span class="text-xs font-black text-stone-800 tracking-wider">${b.text}</span>
+            <span class="text-[9px] uppercase font-bold text-stone-400">${b.label}</span>
+          `;
+          container.appendChild(badge);
+        });
+      }
+
+      // Prepare Scrambled Chips Bank
+      prepareChips(levelData) {
+        const chipsArray = [...levelData.chips];
+        for (let i = chipsArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [chipsArray[i], chipsArray[j]] = [chipsArray[j], chipsArray[i]];
+        }
+
+        this.availableChips = chipsArray.map((text, idx) => ({
+          id: `chip-${idx}`,
+          text: text,
+          used: false
+        }));
+
+        this.renderBank();
+      }
+
+      // Render Slots
+      renderSlots(levelData) {
+        this.placedChips = [null, null, null, null];
+        const container = this.dom.slotsContainer;
+        container.innerHTML = '';
+
+        levelData.slots.forEach((slotInfo, idx) => {
+          const slot = document.createElement('div');
+          slot.id = `slot-${idx}`;
+          slot.className = 'h-14 rounded-2xl border-2 border-dashed border-[#d8c7b8] bg-[#faf7f2] flex flex-col items-center justify-center cursor-pointer transition-all duration-150 relative active:scale-95 hover:border-stone-400 p-1 text-center';
+          slot.innerHTML = `
+            <span class="text-[10px] uppercase font-bold tracking-wider text-stone-400 truncate max-w-full">
+              ${slotInfo.label}
+            </span>
+          `;
+          
+          slot.addEventListener('click', () => {
+            if (this.phase === 'construct' && !this.isLocked) {
+              this.handleSlotClick(idx);
+            }
+          });
+
+          container.appendChild(slot);
+        });
+      }
+
+      // Render Bank Chips
+      renderBank() {
+        const bank = this.dom.chipsBank;
+        bank.innerHTML = '';
+
+        this.availableChips.forEach((chip) => {
+          const btn = document.createElement('button');
+          btn.id = chip.id;
+          btn.textContent = chip.text;
+          btn.className = `px-3.5 py-2.5 rounded-2xl font-black text-xs sm:text-sm tracking-wide chip-tactile border transition-all duration-150 ${
+            chip.used
+              ? 'opacity-20 pointer-events-none bg-stone-100 text-stone-300 border-stone-200'
+              : 'bg-white hover:bg-stone-50 text-stone-800 border-[#eedecf] active:translate-y-0.5'
+          }`;
+
+          btn.addEventListener('click', () => {
+            if (this.phase === 'construct' && !this.isLocked && !chip.used) {
+              this.handleChipClick(chip);
+            }
+          });
+
+          bank.appendChild(btn);
+        });
+      }
+
+      // Phase 1: Memorization (5 Seconds)
+      startMemorizationPhase() {
+        this.phase = 'memorize';
+        this.timerRemaining = this.timerTotal;
+        
+        this.dom.phaseTag.textContent = 'Memoriza';
+        this.dom.phaseTag.className = 'text-xs font-black uppercase px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300';
+        
+        this.dom.timerContainer.classList.remove('hidden');
+        this.dom.technicalPanel.classList.remove('hidden');
+        this.dom.constructionPanel.classList.add('hidden');
+        this.dom.memorizeTimerBar.style.width = '100%';
+        this.dom.timerText.textContent = '5.0s';
+
+        const startTime = Date.now();
+        this.timerInterval = setInterval(() => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          this.timerRemaining = Math.max(0, this.timerTotal - elapsed);
+          
+          const pct = (this.timerRemaining / this.timerTotal) * 100;
+          this.dom.memorizeTimerBar.style.width = `${pct}%`;
+          this.dom.timerText.textContent = `${this.timerRemaining.toFixed(1)}s`;
+
+          if (this.timerRemaining <= 2.0 && this.timerRemaining > 0.1) {
+            if (Math.floor(this.timerRemaining * 10) % 5 === 0) {
+              sound.playTick();
+            }
+          }
+
+          if (this.timerRemaining <= 0) {
+            clearInterval(this.timerInterval);
+            this.endMemorizationPhase();
+          }
+        }, 80);
+      }
+
+      // Phase 2: Construction
+      endMemorizationPhase() {
+        clearInterval(this.timerInterval);
+        clearInterval(this.constructTimerInterval);
+        this.phase = 'construct';
+
+        this.dom.phaseTag.textContent = 'Construcción';
+        this.dom.phaseTag.className = 'text-xs font-black uppercase px-3 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300';
+
+        this.dom.timerContainer.classList.add('hidden');
+        this.dom.technicalPanel.classList.add('hidden');
+        this.dom.constructionPanel.classList.remove('hidden');
+
+        // Start 10-second response countdown
+        this.startConstructionTimer();
+      }
+
+      startConstructionTimer() {
+        clearInterval(this.constructTimerInterval);
+        this.constructTimerRemaining = this.constructTimerTotal;
+        this.dom.constructTimerBar.style.width = '100%';
+        this.dom.constructTimerBar.className = 'h-full bg-amber-500 rounded-full transition-all ease-linear';
+        this.dom.constructTimerText.className = 'font-mono text-amber-600 font-black text-sm';
+        this.dom.constructTimerText.textContent = '10.0s';
+        if (this.dom.constructTimerDot) {
+          this.dom.constructTimerDot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-ping';
+        }
+
+        const startTime = Date.now();
+        this.constructTimerInterval = setInterval(() => {
+          if (this.phase !== 'construct' || this.isLocked) {
+            clearInterval(this.constructTimerInterval);
+            return;
+          }
+
+          const elapsed = (Date.now() - startTime) / 1000;
+          this.constructTimerRemaining = Math.max(0, this.constructTimerTotal - elapsed);
+
+          const pct = (this.constructTimerRemaining / this.constructTimerTotal) * 100;
+          this.dom.constructTimerBar.style.width = `${pct}%`;
+          this.dom.constructTimerText.textContent = `${this.constructTimerRemaining.toFixed(1)}s`;
+
+          // Urgent state when 3.0s or less remain
+          if (this.constructTimerRemaining <= 3.0 && this.constructTimerRemaining > 0) {
+            this.dom.constructTimerBar.className = 'h-full bg-rose-500 rounded-full transition-all ease-linear animate-pulse';
+            this.dom.constructTimerText.className = 'font-mono text-rose-600 font-black text-sm animate-pulse';
+            if (this.dom.constructTimerDot) {
+              this.dom.constructTimerDot.className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping';
+            }
+            if (Math.floor(this.constructTimerRemaining * 10) % 5 === 0) {
+              sound.playTick();
+            }
+          }
+
+          // Timeout reached
+          if (this.constructTimerRemaining <= 0) {
+            clearInterval(this.constructTimerInterval);
+            this.handleTimeout();
+          }
+        }, 80);
+      }
+
+      // Handle Chip Click in Bank
+      handleChipClick(chip) {
+        const emptyIndex = this.placedChips.findIndex(c => c === null);
+        if (emptyIndex === -1) return;
+
+        sound.playChipTap();
+
+        this.placedChips[emptyIndex] = chip;
+        chip.used = true;
+
+        this.updateSlotUI(emptyIndex, chip);
+        this.renderBank();
+
+        // Check if all 4 slots are full -> INSTANT EVALUATION
+        const isFull = this.placedChips.every(c => c !== null);
+        if (isFull) {
+          clearInterval(this.constructTimerInterval);
+          this.evaluateAnswerInstant();
+        }
+      }
+
+      // Handle Slot Click (Remove chip)
+      handleSlotClick(slotIndex) {
+        const placed = this.placedChips[slotIndex];
+        if (!placed) return;
+
+        sound.playRemoveTap();
+
+        this.placedChips[slotIndex] = null;
+        placed.used = false;
+
+        const slotEl = document.getElementById(`slot-${slotIndex}`);
+        const levelData = LEVELS[this.currentLevelIndex];
+        slotEl.className = 'h-14 rounded-2xl border-2 border-dashed border-[#d8c7b8] bg-[#faf7f2] flex flex-col items-center justify-center cursor-pointer transition-all duration-150 relative active:scale-95 hover:border-stone-400 p-1 text-center';
+        slotEl.innerHTML = `
+          <span class="text-[10px] uppercase font-bold tracking-wider text-stone-400 truncate max-w-full">
+            ${levelData.slots[slotIndex].label}
+          </span>
+        `;
+
+        this.renderBank();
+      }
+
+      // Update Slot Visual State
+      updateSlotUI(slotIndex, chip) {
+        const slotEl = document.getElementById(`slot-${slotIndex}`);
+        slotEl.className = 'h-14 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-950 font-black text-xs sm:text-sm px-1 text-center truncate flex items-center justify-center cursor-pointer transition-all duration-150 shadow-sm';
+        slotEl.innerHTML = `
+          <span class="tracking-wide truncate max-w-full">${chip.text}</span>
+        `;
+      }
+
+      /* ==========================================================================
+         5. COMPETITIVE INSTANT EVALUATION (WITH CENTERED MODAL)
+         ========================================================================== */
+      evaluateAnswerInstant() {
+        this.isLocked = true;
+        this.phase = 'evaluating';
+        clearInterval(this.constructTimerInterval);
+
+        const currentLevel = LEVELS[this.currentLevelIndex];
+        const submittedAnswers = this.placedChips.map(c => c ? c.text : null);
+
+        const isCorrect = submittedAnswers.every((val, idx) => val === currentLevel.solution[idx]);
+
+        setTimeout(() => {
+          if (isCorrect) {
+            this.handleSuccess(currentLevel);
+          } else {
+            this.handleFailure(currentLevel);
+          }
+        }, 220);
+      }
+
+      // SUCCESS / ACIERTO
+      handleSuccess(currentLevel) {
+        clearInterval(this.constructTimerInterval);
+        this.streak++;
+        this.flawlessStreak++;
+        // Las 3 vidas se comparten entre todos los niveles (no se restauran a 3)
+        this.renderHearts();
+        this.updateStreakUI();
+
+        this.dom.mainCard.classList.add('success-celebrate');
+        bg3d.burstConfetti();
+
+        if (this.flawlessStreak >= 4) {
+          sound.playBonusCombo();
+        } else {
+          sound.playCorrect();
+        }
+
+        // Highlight slots green
+        for (let i = 0; i < 4; i++) {
+          const slot = document.getElementById(`slot-${i}`);
+          if (slot) {
+            slot.className = 'h-14 rounded-2xl border-2 border-emerald-500 bg-emerald-100 text-emerald-900 font-black text-xs sm:text-sm px-1 text-center truncate flex items-center justify-center shadow-sm';
+          }
+        }
+
+        // SHOW CENTERED SUCCESS MODAL (DOES NOT PASS UNTIL NEXT BUTTON IS CLICKED)
+        const isLastLevel = this.currentLevelIndex === LEVELS.length - 1;
+        this.dom.successModalPill.textContent = this.flawlessStreak >= 4 ? '🔥 Modo En Llamas Activo' : '✨ ¡Acierto Clínico!';
+        this.dom.successModalTitle.textContent = this.flawlessStreak >= 4 ? '¡IMPECABLE!' : '¡Ojo Clínico Perfecto!';
+        this.dom.successModalDesc.textContent = currentLevel.explanation;
+        this.dom.successModalStreak.textContent = `${this.streak} 🔥`;
+        
+        // Mostrar vidas restantes compartidas
+        if (this.dom.successModalLives) {
+          let heartsDisplay = '';
+          for (let i = 1; i <= 3; i++) {
+            heartsDisplay += (i <= this.lives) ? '❤️' : '🤍';
+          }
+          this.dom.successModalLives.textContent = `${this.lives} / 3 ${heartsDisplay}`;
+        }
+
+        this.dom.btnNextLevel.textContent = isLastLevel ? 'Ver Resultados Finales 👑' : 'Siguiente Nivel ➔';
+
+        setTimeout(() => {
+          this.dom.modalSuccess.classList.remove('hidden');
+        }, 400);
+      }
+
+      // FAILURE / FALLO
+      handleFailure(currentLevel) {
+        clearInterval(this.constructTimerInterval);
+        sound.playWrong();
+        this.lives--;
+        this.flawlessStreak = 0;
+        this.renderHearts();
+        this.updateStreakUI();
+
+        this.dom.mainCard.classList.add('shake-fail');
+
+        // Highlight slots red
+        for (let i = 0; i < 4; i++) {
+          const slot = document.getElementById(`slot-${i}`);
+          if (slot) {
+            slot.className = 'h-14 rounded-2xl border-2 border-rose-500 bg-rose-50 text-rose-800 font-black text-xs sm:text-sm px-1 text-center truncate flex items-center justify-center';
+          }
+        }
+
+        if (this.lives <= 0) {
+          setTimeout(() => {
+            this.showGameOverModal();
+          }, 650);
+          return;
+        }
+
+        // SHOW CENTERED FAILURE MODAL
+        if (this.dom.failureModalPill) {
+          this.dom.failureModalPill.textContent = 'Fallo de Calibración';
+          this.dom.failureModalPill.className = 'text-xs font-black tracking-wider uppercase text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 mb-2';
+        }
+        if (this.dom.failureModalTitle) {
+          this.dom.failureModalTitle.textContent = '¡Uy! Casi lo tienes';
+        }
+        this.dom.failureModalHearts.innerHTML = '';
+        for (let i = 1; i <= 3; i++) {
+          this.dom.failureModalHearts.innerHTML += (i <= this.lives) ? '❤️' : '🤍';
+        }
+        this.dom.failureModalDesc.textContent = `Has perdido una vida. Te ${this.lives === 1 ? 'queda' : 'quedan'} ${this.lives} ${this.lives === 1 ? 'vida' : 'vidas'}. Tómate tu tiempo para memorizar la muestra.`;
+
+        setTimeout(() => {
+          this.dom.modalFailure.classList.remove('hidden');
+        }, 500);
+      }
+
+      // TIMEOUT / TIEMPO AGOTADO (10s Límite)
+      handleTimeout() {
+        this.isLocked = true;
+        this.phase = 'evaluating';
+        clearInterval(this.constructTimerInterval);
+
+        sound.playWrong();
+        this.lives--;
+        this.flawlessStreak = 0;
+        this.renderHearts();
+        this.updateStreakUI();
+
+        this.dom.mainCard.classList.add('shake-fail');
+
+        // Highlight slots red
+        for (let i = 0; i < 4; i++) {
+          const slot = document.getElementById(`slot-${i}`);
+          if (slot) {
+            slot.className = 'h-14 rounded-2xl border-2 border-rose-500 bg-rose-50 text-rose-800 font-black text-xs sm:text-sm px-1 text-center truncate flex items-center justify-center';
+          }
+        }
+
+        if (this.lives <= 0) {
+          setTimeout(() => {
+            this.showGameOverModal();
+          }, 650);
+          return;
+        }
+
+        // SHOW FAILURE MODAL WITH TIMEOUT MESSAGE
+        if (this.dom.failureModalPill) {
+          this.dom.failureModalPill.textContent = '¡Tiempo Agotado!';
+          this.dom.failureModalPill.className = 'text-xs font-black tracking-wider uppercase text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 mb-2';
+        }
+        if (this.dom.failureModalTitle) {
+          this.dom.failureModalTitle.textContent = '¡Se agotaron los 10 segundos!';
+        }
+        this.dom.failureModalHearts.innerHTML = '';
+        for (let i = 1; i <= 3; i++) {
+          this.dom.failureModalHearts.innerHTML += (i <= this.lives) ? '❤️' : '🤍';
+        }
+        this.dom.failureModalDesc.textContent = `En diseño y producción de branding la agilidad es clave. Tienes 10 segundos para responder. Te ${this.lives === 1 ? 'queda' : 'quedan'} ${this.lives} ${this.lives === 1 ? 'vida' : 'vidas'}.`;
+
+        setTimeout(() => {
+          this.dom.modalFailure.classList.remove('hidden');
+        }, 500);
+      }
+
+      // Show Game Over Modal
+      showGameOverModal() {
+        sound.playGameOver();
+        this.dom.gameoverLevel.textContent = `${this.currentLevelIndex + 1} / 10`;
+        this.dom.gameoverStreak.textContent = this.streak;
+        this.dom.modalGameOver.classList.remove('hidden');
+      }
+
+      // Show Victory Modal
+      showVictoryModal() {
+        sound.playVictory();
+        this.dom.victoryStreak.textContent = `${this.streak} 🔥`;
+        this.dom.modalVictory.classList.remove('hidden');
+      }
+
+      // Restart Game
+      restartGame() {
+        this.lives = 3;
+        this.streak = 0;
+        this.flawlessStreak = 0;
+        this.renderHearts();
+        this.updateStreakUI();
+        this.startLevel(0);
+      }
+    }
+
+    // Initialize Game on DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      window.game = new GameController();
+      window.addEventListener('pointerdown', () => sound.init(), { once: true });
+    });
+  </script>
+</body>
+</html>
