@@ -4,6 +4,8 @@ Juego web educativo interactivo estilo "Memoria + Duolingo" diseñado para aspir
 
 Desarrollado para el **Centro Tecnológico Ricardo Morales Avilés — Diriamba (INATEC Tecnológico Nacional)**.
 
+👉 **[Jugar Ahora en GitHub Pages](https://nelson330.github.io/memoria-de-diseno/)**
+
 ---
 
 ## 🎮 Mecánica del Juego
